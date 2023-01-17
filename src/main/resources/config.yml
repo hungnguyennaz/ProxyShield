@@ -1,0 +1,7 @@
+# To use this plugin, you will have to register an API key (You could use the free version or the paid one as your needs)
+# To register an API key, go to https://iphub.info/ and create an account then go to https://iphub.info/apiKey/newFree
+# Click on "CLAIM YOUR FREE KEY" and copy the API key and paste and replace the "YOUR_API_KEY" to yours
+# The free API key gives you an amount of 1000 queries per day, you can use paid plans for higher queries capability
+api_key: "YOUR_API_KEY"
+kick_message: "VPN/Proxies aren't allowed on this server. Please consider disable it."
+# By hungaz, I hope my thing can help you in securing your server

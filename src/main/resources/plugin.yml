@@ -1,0 +1,11 @@
+name: ProxyShield
+version: '${project.version}'
+main: me.hungaz.proxyshield.proxyshield.ProxyShield
+api-version: 1.19
+authors: [ hungaz ]
+description: This plugin utilizes advanced IP detection techniques to determine whether a player is using a proxy, and if so, it will automatically kick the player with a message stating that the use of proxies is not allowed on the server.
+commands:
+  proxyshield:
+    description: Reload the plugin
+    usage: '/proxyshield reload'
+    permission: proxyshield.admin
