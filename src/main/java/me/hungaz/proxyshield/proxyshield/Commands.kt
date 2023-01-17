@@ -17,6 +17,8 @@ class Commands(private val plugin: JavaPlugin) : CommandExecutor {
             }
             plugin.reloadConfig()
             config = plugin.config
+            plugin.onDisable()
+            plugin.onEnable()
             sender.sendMessage("ProxyShield config reloaded")
             return true
         }

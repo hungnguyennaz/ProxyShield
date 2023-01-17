@@ -59,6 +59,19 @@ class ProxyShield : JavaPlugin(), Listener {
                 logger.severe("Invalid API Key, please check your config file.")
                 return
             }
+            if(connection.responseCode == 429){
+                logger.severe("You've exceeded your API Key available queries.")
+                return
+            }
+            if(connection.responseCode == 502){
+                logger.severe("Looks like that the IPHub servers are having trouble, IPs will be ignored.")
+                return
+            }
+            if(connection.responseCode == 503){
+                logger.severe("IPHub servers are overloaded/downed, IPs will be ignored.")
+                return
+            }
+
             val response = BufferedReader(InputStreamReader(connection.inputStream)).use {
                 it.readText()
             }
