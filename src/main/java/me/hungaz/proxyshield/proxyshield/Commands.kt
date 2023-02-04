@@ -10,16 +10,20 @@ import org.bukkit.plugin.java.JavaPlugin
 class Commands(private val plugin: JavaPlugin) : CommandExecutor {
     private lateinit var config: FileConfiguration
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
+        if (args.isEmpty()) {
+                sender.sendMessage("§eProxyShield by hungaz.")
+                return true
+             }
         if (args[0].equals("reload")) {
             if(sender is Player && !sender.hasPermission("proxyguard.admin")) {
-                sender.sendMessage("You don't have permission to execute this command")
+                sender.sendMessage("§cYou don't have permission to execute this command")
                 return true
             }
             plugin.reloadConfig()
             config = plugin.config
             plugin.onDisable()
             plugin.onEnable()
-            sender.sendMessage("ProxyShield config reloaded")
+            sender.sendMessage("§aProxyShield config reloaded")
             return true
         }
         return false
