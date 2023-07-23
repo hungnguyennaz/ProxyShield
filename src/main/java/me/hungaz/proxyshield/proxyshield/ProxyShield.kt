@@ -21,7 +21,7 @@ class ProxyShield : JavaPlugin(), Listener {
     private lateinit var config: FileConfiguration
 
     override fun onEnable() {
-        server.pluginManager.registerEvents(this, this);
+        server.pluginManager.registerEvents(this, this)
 
         val cmd = getCommand("proxyshield")
         cmd?.setExecutor(Commands(this))
