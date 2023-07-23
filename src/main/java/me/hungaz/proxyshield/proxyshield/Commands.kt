@@ -11,7 +11,7 @@ class Commands(private val plugin: JavaPlugin) : CommandExecutor {
     private lateinit var config: FileConfiguration
     override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
         if (args.isEmpty()) {
-                sender.sendMessage("§eProxyShield by hungaz.")
+                sender.sendMessage("§cNo commands.")
                 return true
              }
         if (args[0].equals("reload")) {

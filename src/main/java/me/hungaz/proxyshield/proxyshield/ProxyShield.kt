@@ -2,7 +2,7 @@ package me.hungaz.proxyshield.proxyshield
 
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.event.player.PlayerJoinEvent
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent
 import org.bukkit.plugin.java.JavaPlugin
 import org.bukkit.configuration.file.FileConfiguration
 
@@ -10,6 +10,8 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
+import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.URL
 
 import org.json.JSONObject
@@ -19,7 +21,7 @@ class ProxyShield : JavaPlugin(), Listener {
     private lateinit var config: FileConfiguration
 
     override fun onEnable() {
-        server.pluginManager.registerEvents(this, this)
+        server.pluginManager.registerEvents(this, this);
 
         val cmd = getCommand("proxyshield")
         cmd?.setExecutor(Commands(this))
@@ -36,15 +38,16 @@ class ProxyShield : JavaPlugin(), Listener {
     }
 
     @EventHandler
-    fun onPlayerJoin(event: PlayerJoinEvent) {
-        val apiKey = config.getString("api_key")
-        val player = event.player
-        val playerIp = event.player.address?.hostString
+    fun onAsyncPlayerPreLogin(event: AsyncPlayerPreLoginEvent) {
+        val playerName = event.name
+        val playerIp = event.address.hostName
 
-        if (playerIp?.startsWith("127.0.") == true || playerIp?.startsWith("192.168.") == true || playerIp?.startsWith("10.") == true || playerIp == "localhost" || playerIp == "0.0.0.0" || playerIp == "::1") {
-            logger.info("Player ${player.name} is logged in with a local IP, ignoring their IP.")
+        if (playerIp.startsWith("127.0.") || playerIp.startsWith("192.168.") || playerIp.startsWith("10.") || playerIp == "0:0:0:0:0:0:0:1") {
+            logger.info("Player $playerName is trying to join with a local IP, ignoring their IP.")
             return
         }
+
+        val apiKey = config.getString("api_key", "YOUR_API_KEY")
         val requestUrl = "http://v2.api.iphub.info/ip/$playerIp?key=$apiKey"
 
         try {
@@ -55,19 +58,19 @@ class ProxyShield : JavaPlugin(), Listener {
             connection.connectTimeout = 5000
             connection.readTimeout = 5000
             connection.connect()
-            if(connection.responseCode == 403){
+            if (connection.responseCode == 403) {
                 logger.severe("Invalid API Key, please take a look at your config file sir.")
                 return
             }
-            if(connection.responseCode == 429){
+            if (connection.responseCode == 429) {
                 logger.severe("You've exceeded your API Key available queries.")
                 return
             }
-            if(connection.responseCode == 502){
+            if (connection.responseCode == 502) {
                 logger.severe("Looks like the IPHub servers are having trouble, IPs will be ignored.")
                 return
             }
-            if(connection.responseCode == 503){
+            if (connection.responseCode == 503) {
                 logger.severe("IPHub servers are overloaded or down; IPs will be ignored.")
                 return
             }
@@ -78,9 +81,9 @@ class ProxyShield : JavaPlugin(), Listener {
             val json = JSONObject(response)
             val block = json.getInt("block")
             if (block == 1) {
-                val kickMessage = config.getString("kick_message")
-                event.player.kickPlayer(kickMessage)
-                logger.info("Player ${player.name} IP has been flagged as a Proxy")
+                val kickMessage = config.getString("kick_message") ?: "VPN/Proxies aren't allowed on this server. Please consider disable it."
+                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, kickMessage)
+                logger.info("$playerName's IP has been flagged as a Proxy")
             }
         } catch (e: IOException) {
             e.printStackTrace()
