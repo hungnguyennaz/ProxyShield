@@ -84,6 +84,12 @@ class ProxyShield : JavaPlugin(), Listener {
                 val kickMessage = config.getString("kick_message") ?: "VPN/Proxies aren't allowed on this server. Please consider disable it."
                 event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, kickMessage)
                 logger.info("$playerName's IP has been flagged as a Proxy")
+                return
+            } else {
+                val showPassedMessage = config.getBoolean("show_passed_check_message", true)
+                if (showPassedMessage) {
+                    logger.info("$playerName has passed the VPN/Proxy check.")
+                }
             }
         } catch (e: IOException) {
             e.printStackTrace()
