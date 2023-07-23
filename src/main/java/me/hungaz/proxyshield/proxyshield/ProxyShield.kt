@@ -41,8 +41,8 @@ class ProxyShield : JavaPlugin(), Listener {
         val player = event.player
         val playerIp = event.player.address?.hostString
 
-        if (playerIp?.startsWith("127.0.") == true || playerIp?.startsWith("192.168.") == true || playerIp?.startsWith("10.") == true || playerIp == "localhost" || playerIp == "0.0.0.0") {
-            logger.info("Player ${player.name} is using local IP, ignore their IP.")
+        if (playerIp?.startsWith("127.0.") == true || playerIp?.startsWith("192.168.") == true || playerIp?.startsWith("10.") == true || playerIp == "localhost" || playerIp == "0.0.0.0" || playerIp == "::1") {
+            logger.info("Player ${player.name} is logged in with a local IP, ignoring their IP.")
             return
         }
         val requestUrl = "http://v2.api.iphub.info/ip/$playerIp?key=$apiKey"
@@ -56,7 +56,7 @@ class ProxyShield : JavaPlugin(), Listener {
             connection.readTimeout = 5000
             connection.connect()
             if(connection.responseCode == 403){
-                logger.severe("Invalid API Key, please check your config file.")
+                logger.severe("Invalid API Key, please take a look at your config file sir.")
                 return
             }
             if(connection.responseCode == 429){
@@ -64,11 +64,11 @@ class ProxyShield : JavaPlugin(), Listener {
                 return
             }
             if(connection.responseCode == 502){
-                logger.severe("Looks like that the IPHub servers are having trouble, IPs will be ignored.")
+                logger.severe("Looks like the IPHub servers are having trouble, IPs will be ignored.")
                 return
             }
             if(connection.responseCode == 503){
-                logger.severe("IPHub servers are overloaded/downed, IPs will be ignored.")
+                logger.severe("IPHub servers are overloaded or down; IPs will be ignored.")
                 return
             }
 

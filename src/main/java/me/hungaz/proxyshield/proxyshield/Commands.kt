@@ -16,14 +16,14 @@ class Commands(private val plugin: JavaPlugin) : CommandExecutor {
              }
         if (args[0].equals("reload")) {
             if(sender is Player && !sender.hasPermission("proxyguard.admin")) {
-                sender.sendMessage("§cYou don't have permission to execute this command")
+                sender.sendMessage("§cYou don't have permission to execute this command.")
                 return true
             }
             plugin.reloadConfig()
             config = plugin.config
             plugin.onDisable()
             plugin.onEnable()
-            sender.sendMessage("§aProxyShield config reloaded")
+            sender.sendMessage("§aProxyShield config reloaded.")
             return true
         }
         return false
