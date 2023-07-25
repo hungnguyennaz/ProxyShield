@@ -35,7 +35,7 @@ class ProxyShield : JavaPlugin(), Listener {
 
     private fun getPublicIPAddress(): String? {
         try {
-            val url = URL("https://api64.ipify.org?format=json")
+            val url = URL("https://api.ipify.org?format=json")
             val connection = url.openConnection()
             connection.connectTimeout = 5000
             connection.readTimeout = 5000
