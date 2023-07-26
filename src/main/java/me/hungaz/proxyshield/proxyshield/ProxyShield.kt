@@ -11,12 +11,16 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
-import java.net.InetAddress
 import java.net.URL
+import java.util.concurrent.TimeUnit
 
 class ProxyShield : JavaPlugin(), Listener {
     private lateinit var config: FileConfiguration
-    private val proxyCache: MutableMap<String, Int> = HashMap()
+    private val proxyCache: MutableMap<String, CachedData> = HashMap()
+
+    private var cacheExpirationTime: Long = 10
+
+    private data class CachedData(val result: Int, val timestamp: Long)
 
     override fun onEnable() {
         server.pluginManager.registerEvents(this, this)
@@ -32,69 +36,32 @@ class ProxyShield : JavaPlugin(), Listener {
         }
 
         config = getConfig()
+        loadConfigSettings()
     }
 
-    private fun getPublicIPAddress(): String? {
-        try {
-            val url = URL("https://api.ipify.org?format=json")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.connectTimeout = 5000
-            connection.readTimeout = 5000
-            connection.connect()
+    private fun loadConfigSettings() {
+        cacheExpirationTime = config.getLong("cache_expiration", 15)
 
-            val reader = connection.inputStream.bufferedReader()
-            val response = reader.readLine().trim()
-            reader.close()
-
-            val json = JSONObject(response)
-            return json.getString("ip")
-        } catch (e: IOException) {
-            logger.warning("Failed to get the public IP address of the server.")
-            e.printStackTrace()
-            return null
-        }
+        cacheExpirationTime = TimeUnit.MINUTES.toMillis(cacheExpirationTime)
     }
 
-    @EventHandler
-    fun onAsyncPlayerPreLogin(event: AsyncPlayerPreLoginEvent) {
-        val playerName = event.name
-        val ipAddress = getPublicIPAddress()
-
-        if (ipAddress == null) {
-            logger.warning("Failed to get the public IP address of $playerName.")
-            return
-        }
-
-        val inetAddress = try {
-            InetAddress.getByName(ipAddress)
-        } catch (e: Exception) {
-            logger.warning("Invalid IP address for player $playerName: $ipAddress")
-            return
-        }
-
-        val playerIp = inetAddress.hostAddress
-
-        if (playerIp.startsWith("127.0.") || playerIp.startsWith("192.168.") || playerIp.startsWith("10.") || playerIp == "0:0:0:0:0:0:0:1") {
-            logger.info("$playerName is trying to join with a local IP, ignoring their IP.")
-            return
-        }
-
-        val block = performProxyCheck(playerIp)
-        if (block == 1) {
-            val kickMessage = config.getString("kick_message") ?: "VPN/Proxies aren't allowed on this server. Please consider disabling it."
-            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, kickMessage)
-            logger.info("$playerName's IP has been flagged as a Proxy")
+    private fun getFromCache(playerIp: String): Int? {
+        val cachedData = proxyCache[playerIp]
+        return if (cachedData != null && System.currentTimeMillis() - cachedData.timestamp < cacheExpirationTime) {
+            cachedData.result
         } else {
-            val showPassedMessage = config.getBoolean("show_passed_check_message", true)
-            if (showPassedMessage) {
-                logger.info("$playerName has passed the VPN/Proxy check.")
-            }
+            null
         }
+    }
+
+    private fun saveToCache(playerIp: String, block: Int) {
+        proxyCache[playerIp] = CachedData(block, System.currentTimeMillis())
     }
 
     private fun performProxyCheck(playerIp: String): Int {
-        if (proxyCache.containsKey(playerIp)) {
-            return proxyCache[playerIp]!!
+        val cachedResult = getFromCache(playerIp)
+        if (cachedResult != null) {
+            return cachedResult
         }
 
         val apiKey = config.getString("api_key", "YOUR_API_KEY")
@@ -138,12 +105,41 @@ class ProxyShield : JavaPlugin(), Listener {
             val json = JSONObject(response)
             val block = json.getInt("block")
 
-            proxyCache[playerIp] = block
+            proxyCache[playerIp] = CachedData(block, System.currentTimeMillis())
+            saveToCache(playerIp, block)
             return block
         } catch (e: IOException) {
             logger.warning("Failed to perform the Proxy check for IP: $playerIp")
             e.printStackTrace()
         }
         return -1
+    }
+
+    @EventHandler
+    fun onAsyncPlayerPreLogin(event: AsyncPlayerPreLoginEvent) {
+        val playerName = event.name
+        val playerIp = event.address.hostAddress
+
+        if (playerIp.startsWith("127.0.") || playerIp.startsWith("192.168.") || playerIp.startsWith("10.") || playerIp.startsWith("OpenWrt") || playerIp == "0:0:0:0:0:0:0:1") {
+            logger.info("$playerName is trying to join with a local IP, ignoring their IP.")
+            return
+        }
+
+        val block = performProxyCheck(playerIp)
+        if (block == -1) {
+            logger.warning("Invalid IP address for player $playerName: $playerIp")
+            return
+        }
+
+        if (block == 1) {
+            val kickMessage = config.getString("kick_message") ?: "VPN/Proxies aren't allowed on this server. Please consider disabling it."
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, kickMessage)
+            logger.info("$playerName's IP has been flagged as a Proxy")
+        } else {
+            val showPassedMessage = config.getBoolean("show_passed_check_message", true)
+            if (showPassedMessage) {
+                logger.info("$playerName has passed the VPN/Proxy check.")
+            }
+        }
     }
 }

@@ -5,4 +5,5 @@
 api_key: "YOUR_API_KEY"
 kick_message: "VPN/Proxies aren't allowed on this server. Please consider disabling it."
 show_passed_check_message: "false"
+cache_expiration: 15 # In minutes
 # Made with ♥ by hungnguyennaz.
